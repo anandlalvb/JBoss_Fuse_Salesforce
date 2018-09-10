@@ -4,6 +4,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.salesforce.dto.QueryRecordsAccount;
 import org.apache.camel.salesforce.dto.QueryRecordsOpportunity;
+import org.mycompany.model.UserPojo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -67,7 +68,32 @@ class RestApi extends RouteBuilder {
         
 		rest("/say")
 	    .get("/hello/{name}").route().transform().simple("Hello ${header.name}");
-
 		
+		// Define the service with REST DSL
+		/*rest("/users/")
+		    .post("lives").type(UserPojo.class).outType(CountryPojo.class)
+		        .route()
+		            .choice()
+		                .when().simple("${body.id} < 100")
+		                    .bean(new UserErrorService(), "idTooLowError")
+		                .otherwise()
+		                    .bean(new UserService(), "livesWhere");*/
+		
+        
+        // this user REST service is json only
+        rest("/user").description("User rest service")
+            .consumes("application/json").produces("application/json")
+
+            .get("/list").outTypeList(UserPojo.class)
+            .to("bean:userService?method=listUsers")
+
+            .put("/update").type(UserPojo.class).outType(UserPojo.class)
+            .to("bean:userService?method=updateUser")
+
+        
+        	.get("/findAll").description("Find all users").outTypeList(UserPojo.class)
+        	.responseMessage().code(200).message("All users").endResponseMessage()
+        	.to("bean:userService?method=listUsers");
+
 	}
 }
