@@ -2,6 +2,7 @@ package org.mycompany;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
+import org.apache.camel.salesforce.dto.Opportunity;
 import org.apache.camel.salesforce.dto.QueryRecordsAccount;
 import org.apache.camel.salesforce.dto.QueryRecordsOpportunity;
 import org.mycompany.model.UserPojo;
@@ -34,7 +35,6 @@ class RestApi extends RouteBuilder {
 //                .route().routeId("order-api")
 //                .bean(Database.class, "findOrder(${header.id})");
 		
-		rest("/opportunitiestest").get("/").to("salesforce:query?sObjectQuery=SELECT id,name from Opportunity&sObjectClass=" + QueryRecordsOpportunity.class.getName());
 		
 		
 		rest("/accounts")
@@ -94,6 +94,17 @@ class RestApi extends RouteBuilder {
         	.get("/findAll").description("Find all users").outTypeList(UserPojo.class)
         	.responseMessage().code(200).message("All users").endResponseMessage()
         	.to("bean:userService?method=listUsers");
+
+        rest("/opportunity")
+        	.get("/list").to("salesforce:query?sObjectQuery=SELECT id,name from Opportunity&sObjectClass=" + QueryRecordsOpportunity.class.getName())
+        	
+        	.put("/upsert").to("salesforce:createSObject?SObjectName=Opportunity").type(Opportunity.class).outType(Opportunity.class);//direct:createNewOpportunity
+
+        //to("salesforce:query?sObjectQuery=SELECT id,name from Opportunity&sObjectClass=" + QueryRecordsOpportunity.class.getName());
+        
+
+        /*from("direct:createNewOpportunity").routeId("createOpportunity")
+    		.to("salesforce:createSObject?SObjectName=Opportunity");*/
 
 	}
 }

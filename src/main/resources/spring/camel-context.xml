@@ -26,10 +26,8 @@
         </property>
         <property name="packages" value="${sObjectDTOPackages}"/>
     </bean>
-
-  <!-- a bean for user services -->
-  <bean id="userService" class="org.mycompany.UserService"/>
-    
+    <!-- a bean for user services -->
+    <bean class="org.mycompany.UserService" id="userService"/>
     <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
         <!-- <restConfiguration component="jetty" bindingMode="json" contextPath="/camel-example" 
 			port="8181"> <dataFormatProperty key="prettyPrint" value="true" /> </restConfiguration> -->
