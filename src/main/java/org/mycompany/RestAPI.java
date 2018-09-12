@@ -1,5 +1,6 @@
 package org.mycompany;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.salesforce.dto.Opportunity;
@@ -50,7 +51,7 @@ class RestApi extends RouteBuilder {
 		
 		
         // Camel routes for integrating with Salesforce
-        from("direct:createAccount").routeId("createAccount")
+        from("direct:createAccount").routeId("createAccount").log("Create New Account ${body}").setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                 .to("salesforce:createSObject?SObjectName=Account");
 
         from("direct:updateAccount").routeId("updateAccount")
@@ -98,13 +99,22 @@ class RestApi extends RouteBuilder {
         rest("/opportunity")
         	.get("/list").to("salesforce:query?sObjectQuery=SELECT id,name from Opportunity&sObjectClass=" + QueryRecordsOpportunity.class.getName())
         	
-        	.put("/upsert").to("salesforce:createSObject?SObjectName=Opportunity").type(Opportunity.class).outType(Opportunity.class);//direct:createNewOpportunity
+        	.put("/upsert").type(Opportunity.class).outType(Opportunity.class).to("direct:createNewOpportunity");
 
         //to("salesforce:query?sObjectQuery=SELECT id,name from Opportunity&sObjectClass=" + QueryRecordsOpportunity.class.getName());
         
 
-        /*from("direct:createNewOpportunity").routeId("createOpportunity")
-    		.to("salesforce:createSObject?SObjectName=Opportunity");*/
+        from("direct:createNewOpportunity")
+        	.log("Create New Opportunity ${body}")
+        	.routeId("createOpportunity")
+        	.process(exchange ->{
+        		exchange.getIn().getBody(Opportunity.class);
+        		Opportunity opportunity = new Opportunity();
+        		opportunity.setName("Test 111");
+        		exchange.getIn().setBody(opportunity);
+        	}
+        	)
+    		.to("salesforce:createSObject").bean(Opportunity.class);//?SObjectName="+Opportunity.class.getName());
 
 	}
 }
