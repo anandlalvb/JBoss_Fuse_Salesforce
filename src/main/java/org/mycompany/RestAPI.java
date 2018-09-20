@@ -22,9 +22,10 @@ class RestApi extends RouteBuilder {
 
 	@Override
 	public void configure() {
-		restConfiguration().component("servlet").bindingMode(RestBindingMode.json)
-				.dataFormatProperty("prettyPrint", "true").enableCORS(true).port(env.getProperty("server.port", "8081"))
+		restConfiguration().component("servlet").bindingMode(RestBindingMode.off)
+				.dataFormatProperty("prettyPrint", "true").enableCORS(true).port(env.getProperty("server.port", "8080"))
 				.contextPath(contextPath.substring(0, contextPath.length() - 2))
+				.host("localhost")
 				// turn on swagger api-doc
 				.apiContextPath("/api-doc").apiProperty("api.title", "User API").apiProperty("api.version", "1.0.0");
 
@@ -38,32 +39,33 @@ class RestApi extends RouteBuilder {
 		
 		
 		
-		rest("/accounts")
-	        .get("/").route().transform().simple("").to("direct:getAccounts").setBody().simple("${body.records}").endRest()
+		rest("/accounts").description("Accounts API").produces("application/json")
+	       
+			.get("/").description("Get Accounts").route().transform().simple("").to("direct:getAccounts").setBody().simple("${body.records}").endRest()
 	
-	        .get("/{id}").route().transform().simple("${headers['id']}").to("direct:getAccount").endRest()
+	        .get("/{id}").description("Get an Account").route().transform().simple("${headers['id']}").to("direct:getAccount").endRest()
 		
-			.post("/").to("direct:createAccount")
+			.post("/").description("Create and Account").to("direct:createAccount")
 
-			.put("/{id}").route().setHeader("sObjectId").simple("${headers['id']}").to("direct:updateAccount").endRest()
+			.put("/{id}").description("Update an Account").route().setHeader("sObjectId").simple("${headers['id']}").to("direct:updateAccount").endRest()
 
-			.delete("/{id}").route().transform().simple("${headers['id']}").to("direct:deleteAccount").endRest();
+			.delete("/{id}").description("Delete an Account").route().transform().simple("${headers['id']}").to("direct:deleteAccount").endRest();
 		
 		
         // Camel routes for integrating with Salesforce
         from("direct:createAccount").routeId("createAccount").log("Create New Account ${body}").setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                 .to("salesforce:createSObject?SObjectName=Account");
 
-        from("direct:updateAccount").routeId("updateAccount")
-        		.to("salesforce:updateSObject?SObjectName=Account");
+        from("direct:updateAccount").routeId("updateAccount").log("Update Account ${body}").setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+        		.to("salesforce:updateSObject?SObjectName=Account").log("Update Account ${body}");
 
-		from("direct:getAccount").routeId("getAccount")
-		        .to("salesforce:getSObject?SObjectName=Account&sObjectFields=Id,Name,TickerSymbol,Type,Active__c,AccountNumber,AnnualRevenue");
+		from("direct:getAccount").routeId("getAccount").log("Get Account ${body}").setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+		        .to("salesforce:getSObject?SObjectName=Account&sObjectFields=Id,Name,TickerSymbol,Type,Active__c,AccountNumber,AnnualRevenue").log("Get Account ${body}");
 		
-		from("direct:deleteAccount").routeId("deleteAccount")
-		        .to("salesforce:deleteSObject?SObjectName=Account");
+		from("direct:deleteAccount").routeId("deleteAccount").log("Delete Account ${body}").setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+		        .to("salesforce:deleteSObject?SObjectName=Account").log("Delete Account ${body}");
 		
-		from("direct:getAccounts").routeId("getAccounts")
+		from("direct:getAccounts").routeId("getAccounts").setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
 		        .to("salesforce:query?sObjectQuery=SELECT Id,Name,TickerSymbol,Type,Active__c,AccountNumber,AnnualRevenue from Account&sObjectClass=" + QueryRecordsAccount.class.getName());
 		
         
@@ -85,10 +87,10 @@ class RestApi extends RouteBuilder {
         rest("/user").description("User rest service")
             .consumes("application/json").produces("application/json")
 
-            .get("/list").outTypeList(UserPojo.class)
+            .get("/list").description("List User").outTypeList(UserPojo.class)
             .to("bean:userService?method=listUsers")
 
-            .put("/update").type(UserPojo.class).outType(UserPojo.class)
+            .put("/update").description("Update User").type(UserPojo.class).outType(UserPojo.class)
             .to("bean:userService?method=updateUser")
 
         
